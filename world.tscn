@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://bskupdpwru80t"]
+
+[ext_resource type="Script" uid="uid://de31ajbatepp2" path="res://world.gd" id="1_fj7yv"]
+[ext_resource type="PackedScene" uid="uid://dl23lqketspwp" path="res://player.tscn" id="2_tlwt5"]
+[ext_resource type="PackedScene" uid="uid://dlofu56veelap" path="res://ball.tscn" id="3_tlwt5"]
+
+[sub_resource type="Theme" id="Theme_tlwt5"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_fj7yv"]
+
+[node name="World" type="Node2D" unique_id=823114132]
+script = ExtResource("1_fj7yv")
+player_scene = ExtResource("2_tlwt5")
+ball_scene = ExtResource("3_tlwt5")
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=748611051]
+_spawnable_scenes = PackedStringArray("uid://dl23lqketspwp", "uid://dlofu56veelap")
+spawn_path = NodePath("../Players")
+
+[node name="Players" type="Node2D" parent="." unique_id=459202759]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1147202480]
+
+[node name="MainMenu" type="Control" parent="CanvasLayer" unique_id=358678704]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="IngameUI" type="Control" parent="CanvasLayer" unique_id=271982773]
+visible = false
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/IngameUI" unique_id=1634814722]
+show_behind_parent = true
+custom_minimum_size = Vector2(0, 303)
+layout_mode = 0
+offset_left = 522.0
+offset_top = 34.0
+offset_right = 907.0
+offset_bottom = 337.0
+color = Color(0, 0, 0, 0.20784314)
+
+[node name="Chat" type="VBoxContainer" parent="CanvasLayer/IngameUI" unique_id=402381791]
+layout_mode = 0
+offset_left = 521.0
+offset_top = 3.0
+offset_right = 908.0
+offset_bottom = 338.0
+
+[node name="ChatInput" type="LineEdit" parent="CanvasLayer/IngameUI/Chat" unique_id=1505208331]
+layout_mode = 2
+
+[node name="ChatScroll" type="ScrollContainer" parent="CanvasLayer/IngameUI/Chat" unique_id=1082684929]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+size_flags_vertical = 3
+theme = SubResource("Theme_tlwt5")
+
+[node name="ChatLog" type="RichTextLabel" parent="CanvasLayer/IngameUI/Chat/ChatScroll" unique_id=2125667597]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+fit_content = true
+scroll_following = true
+
+[node name="PlayerList" type="ItemList" parent="CanvasLayer/IngameUI" unique_id=1278984939]
+layout_mode = 0
+offset_left = 1002.0
+offset_right = 1152.0
+offset_bottom = 200.0
+
+[node name="LoadingOverlay" type="ColorRect" parent="CanvasLayer" unique_id=1952685035]
+offset_right = 1150.0
+offset_bottom = 650.0
+
+[node name="Label" type="Label" parent="CanvasLayer/LoadingOverlay" unique_id=1739003026]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="Floor" type="StaticBody2D" parent="." unique_id=428057037]
+position = Vector2(30, 400)
+metadata/_edit_group_ = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor" unique_id=1381230816]
+shape = SubResource("WorldBoundaryShape2D_fj7yv")

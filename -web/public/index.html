@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixgate - Universe</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; text-align: center; padding-top: 50px; }
+        .card { background: #2d2d2d; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 400px; }
+        .hidden { display: none; }
+        input, select { width: 90%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #1a1a1a; color: white; }
+        button { padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 5px; }
+        .btn-login { background: #3498db; color: white; width: 100%; }
+        .btn-save { background: #3498db; color: white; }
+        .btn-host { background: #2ecc71; color: white; width: 100%; font-size: 1.1rem; margin-top: 20px; }
+        .btn-delete { background: #e67e22; color: white; width: 100%; margin-top: 5px; }
+        .btn-logout { background: #e74c3c; color: white; font-size: 0.8rem; margin-top: 20px; }
+        .btn-join { background: #f1c40f; color: #000; font-size: 0.8rem; padding: 5px 15px; }
+        .server-list { margin-top: 30px; text-align: left; background: #252525; border-radius: 8px; padding: 15px; border: 1px solid #333; }
+        .server-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; }
+        .server-item:last-child { border-bottom: none; }
+        input[type="color"] { width: 60px; height: 60px; vertical-align: middle; background: none; border: none; cursor: pointer; }
+        #auth-toggle-text { font-size: 0.85rem; margin-top: 15px; cursor: pointer; color: #3498db; text-decoration: underline; }
+        .net-config { margin-top: 15px; background: #222; padding: 10px; border-radius: 6px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="card">
+        <h1 id="auth-title">Pixgate Login</h1>
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button id="auth-btn" class="btn-login" onclick="login()">LOGIN</button>
+        <p id="auth-toggle-text" onclick="toggleAuth()">Need an account? Register here.</p>
+    </div>
+
+    <div id="dashboard-section" class="card hidden">
+        <div id="user-info">
+            <h1>Welcome, <span id="display-name"></span></h1>
+            <input type="color" id="colorPicker">
+            <button class="btn-save" onclick="saveProfile()">SAVE COLOR</button>
+        </div>
+
+        <div class="net-config">
+            <label style="font-size: 0.7rem; color: #888; display: block; text-align: left; margin-left: 5%;">CONNECTION MODE</label>
+            <select id="network-mode" onchange="toggleCustomIp()">
+                <option value="local">Local Testing (127.0.0.1)</option>
+                <option value="auto">Public (Auto-Detect IP)</option>
+                <option value="custom">Manual IP Entry</option>
+            </select>
+            <input type="text" id="custom-ip-input" class="hidden" placeholder="Enter IP Address">
+        </div>
+
+        <button class="btn-host" onclick="startHosting()">CREATE NEW WORLD</button>
+        <button class="btn-delete" onclick="stopHosting()">CLOSE MY WORLD</button>
+
+        <div class="server-list">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Active Worlds</h3>
+                <button onclick="refreshServerList()" style="font-size: 0.6rem; padding: 4px;">Refresh</button>
+            </div>
+            <div id="servers-container"></div>
+        </div>
+
+        <button class="btn-logout" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <script>
+        let loggedInUser = null;
+        let isRegistering = false;
+
+        // AUTO-LOGIN ON PAGE LOAD 
+        window.onload = function() {
+            const savedUser = localStorage.getItem("pixgate_user");
+            if (savedUser) {
+                console.log("Found saved user session:", savedUser);
+                loggedInUser = savedUser;
+                document.getElementById('display-name').innerText = loggedInUser;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+
+                // Fetch color profile to keep UI synced
+                fetch('/api/player/' + loggedInUser)
+                    .then(r => r.json())
+                    .then(data => {
+                        if(data.color) document.getElementById('colorPicker').value = data.color;
+                    })
+                    .catch(e => console.log("Could not sync color", e));
+
+                refreshServerList();
+            }
+            setInterval(refreshServerList, 5000);
+        };
+
+        function toggleAuth() {
+            isRegistering = !isRegistering;
+            const title = document.getElementById('auth-title');
+            const btn = document.getElementById('auth-btn');
+            const toggleText = document.getElementById('auth-toggle-text');
+            if (isRegistering) {
+                title.innerText = "Pixgate Registration";
+                btn.innerText = "CREATE ACCOUNT";
+                btn.onclick = register;
+                toggleText.innerText = "Already have an account? Login.";
+            } else {
+                title.innerText = "Pixgate Login";
+                btn.innerText = "LOGIN";
+                btn.onclick = login;
+                toggleText.innerText = "Need an account? Register here.";
+            }
+        }
+
+        function toggleCustomIp() {
+            const mode = document.getElementById('network-mode').value;
+            document.getElementById('custom-ip-input').classList.toggle('hidden', mode !== 'custom');
+        }
+
+        async function login() {
+            const user = document.getElementById('login-username').value;
+            const pass = document.getElementById('login-password').value;
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                loggedInUser = data.username;
+
+                // SAVE SESSION
+                localStorage.setItem("pixgate_user", loggedInUser);
+
+                document.getElementById('display-name').innerText = loggedInUser;
+                document.getElementById('colorPicker').value = data.color;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                refreshServerList();
+            } else { alert("Invalid Login"); }
+        }
+
+        async function register() {
+            const user = document.getElementById('login-username').value;
+            const pass = document.getElementById('login-password').value;
+            if (!user || !pass) return alert("Please fill fields.");
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            if (response.ok) {
+                alert("Account created! Login now.");
+                toggleAuth();
+            } else {
+                const data = await response.json();
+                alert(data.error || "Failed.");
+            }
+        }
+
+        async function logout() {
+            if (loggedInUser) {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedInUser })
+                });
+            }
+            // CLEAR SESSION 
+            localStorage.removeItem("pixgate_user");
+            location.reload();
+        }
+
+        async function saveProfile() {
+            const color = document.getElementById('colorPicker').value;
+            await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: loggedInUser, color: color })
+            });
+            alert("Profile Saved!");
+        }
+
+        async function startHosting() {
+            const mode = document.getElementById('network-mode').value;
+            const manualIp = document.getElementById('custom-ip-input').value;
+
+            const response = await fetch('/api/host-game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: loggedInUser, mode: mode, manualIp: manualIp })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const targetIp = data.detected_ip || '127.0.0.1';
+                alert("World spawned on server! Launching game window...");
+                // Force join your own world
+                window.location.href = `pixgate://action=join&user=${loggedInUser}&ip=${targetIp}`;
+                refreshServerList();
+            } else {
+                alert("Failed to spawn world on server.");
+            }
+        }
+
+        async function stopHosting() {
+            if (!loggedInUser) return;
+            const response = await fetch('/api/stop-hosting', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: loggedInUser })
+            });
+            if (response.ok) { refreshServerList(); alert("World closed."); }
+        }
+
+        async function refreshServerList() {
+            try {
+                const res = await fetch('/api/servers');
+                const servers = await res.json();
+                const container = document.getElementById('servers-container');
+
+                // IMPORTANT: The button now relies on loggedInUser being set by the Auto-Login logic
+                container.innerHTML = servers.length > 0
+                    ? servers.map(s => `
+                        <div class="server-item">
+                            <span><strong>${s.host_name}'s World</strong></span>
+                            <button class="btn-join" onclick="window.location.href='pixgate://action=join&user=${loggedInUser}&ip=${s.ip_address}'">JOIN</button>
+                        </div>`).join('')
+                    : '<p style="color:#666; font-style: italic;">No worlds active...</p>';
+            } catch (e) { console.log("Refresh failed"); }
+        }
+    </script>
+</body>
+</html>

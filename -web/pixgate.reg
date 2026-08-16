@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\pixgate]
+@="URL:Pixgate Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\pixgate\shell]
+
+[HKEY_CLASSES_ROOT\pixgate\shell\open]
+
+[HKEY_CLASSES_ROOT\pixgate\shell\open\command]
+@="\"C:\\Users\\Felix\\Downloads\\Godot_v4.6-stable_win64.exe\" --path \"C:\\Users\\Felix\\Documents\\GitHub\\PixgateGH\\pixgate\" -- \"%1\""

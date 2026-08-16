@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://dlofu56veelap"]
+
+[ext_resource type="Texture2D" uid="uid://ba34aebgfx81f" path="res://icon.svg" id="1_x8fbi"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_x8fbi"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_aqk2v"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+
+[node name="ball" type="RigidBody2D" unique_id=519882503]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=738726403]
+texture = ExtResource("1_x8fbi")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1801177560]
+shape = SubResource("CircleShape2D_x8fbi")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1138415237]
+replication_config = SubResource("SceneReplicationConfig_aqk2v")
